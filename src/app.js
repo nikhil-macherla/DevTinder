@@ -6,6 +6,7 @@ const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth");
 
 // // app.use((req, res) => // , so even if i do /test, /hello response wil be coming from here
 // // {
@@ -74,11 +75,15 @@ app.post("/login", async (req, res) =>
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (isPasswordValid) {
-      const token = await jwt.sign({ _id: user, _id }, "DEV@Tinder");
+      const token = await jwt.sign({ _id: user, _id }, "DEV@Tinder", {
+        expiresIn:"1d",
+      });
       console.log(token);
       ///res.cookie("token", "ajahhajaja");
-      res.cookie("token", token);
-
+      //res.cookie("token", token); // you can expire cookies read express docs
+      res.cookie("token", token, {
+        expires: new Date(Date.now() + 8 * 3600000),
+      });
       res.send("Login Successful!!");
     }
     else {
@@ -90,20 +95,11 @@ app.post("/login", async (req, res) =>
 })
 
 
-app.get("/profile", async (req, res) =>
+app.get("/profile", userAuth, async (req, res) =>
 {
   // validate my cookie
   try {
-    const cookies = req.cookies;
-    const { token } = req.cookies;
-    if (!token)
-    {
-      throw new Error("Invalid token");
-    }
-    const decodedMessage = await jwt.verify(token, "DEV@Tinder");
-    const { _id } = decodedMessage;
-
-    const user = await User.findById(_id);
+    const user = req.user;
     if (!user)
     {
       throw new Error("Login again");
@@ -168,6 +164,13 @@ app.patch("/user/:userId", async (req, res) => {
     res.status(400).send("UPDATE FAILED:"+ err.message);
   }
 });
+
+app.post("/sendConnectionRequest", userAuth, async (req, res) =>
+{
+  const user = req.user;
+  console.log("sending connection request");
+  res.send(user.firstName + "sent Connection Request");
+})
 
 
 connectDB()
