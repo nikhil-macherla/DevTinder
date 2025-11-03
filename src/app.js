@@ -73,11 +73,12 @@ app.post("/login", async (req, res) =>
     if (!user) {
       throw new Error('Email is not present in DB');
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (isPasswordValid) {
-      const token = await jwt.sign({ _id: user, _id }, "DEV@Tinder", {
-        expiresIn:"1d",
-      });
+    const isPasswordValid = await user.validatePassword(password);
+     if (isPasswordValid) {
+    //   const token = await jwt.sign({ _id: user, _id }, "DEV@Tinder", {
+    //     expiresIn:"1d",});
+
+    const token = await user.getJWT();
       console.log(token);
       ///res.cookie("token", "ajahhajaja");
       //res.cookie("token", token); // you can expire cookies read express docs
