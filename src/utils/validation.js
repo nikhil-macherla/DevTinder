@@ -14,6 +14,17 @@ const validateSignUpData = (req) => {
   }
 };
 
+const validateEditProfileData = (req) =>
+{
+  // i don't want user to edit everything
+  const isEditAllowed = ["firstName", "lastName", "emailId", "photoUrl", "gender", "age", "about", "skills"];
+  Object.keys(req.body).every(field =>
+    allowedEditFields.includes(field)
+  );
+  return isEditAllowed;
+}
+
 module.exports = {
-  validateSignUpData
+  validateSignUpData,
+  validateEditProfileData
 }

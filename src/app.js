@@ -2,11 +2,19 @@ const express = require('express');
 const connectDB = require('./config/database');
 const app = express(); // instance of express app
 const User = require("./models/user");
-const { validateSignUpData } = require("./utils/validation");
+// const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const { userAuth } = require("./middlewares/auth");
+
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/requests");
+
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
 
 // // app.use((req, res) => // , so even if i do /test, /hello response wil be coming from here
 // // {
@@ -43,79 +51,18 @@ const { userAuth } = require("./middlewares/auth");
 // to avoid that folllow  this process
 
 
+
+
+
 app.use(express.json()); // middleware to convert readbale stream to json
 app.use(cookieParser());
 
-app.post("/signup", async (req, res) => {
-  try{
-    validateSignUpData(req);
-    const { firstName, lastName, emailId, password } = req.body;
-    //never trust req.body
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = new User(
-      {
-        firstName, lastName, emailId, password: passwordHash
-      });
-    await user.save();
-    res.send(("User added Successfully!"));
-  }
-  catch (err) {
-    res.status(400).send("Error Saving the User:", err.message);
-  }
-});
-
-app.post("/login", async (req, res) =>
-{
-  try {
-    const { emailId, password } = req.body;
-    if (!validator.isEmail(emailId)) throw new Error("do something");
-    const user = await User.findOne({ emailId: emailId });
-    if (!user) {
-      throw new Error('Email is not present in DB');
-    }
-    const isPasswordValid = await user.validatePassword(password);
-     if (isPasswordValid) {
-    //   const token = await jwt.sign({ _id: user, _id }, "DEV@Tinder", {
-    //     expiresIn:"1d",});
-
-    const token = await user.getJWT();
-      console.log(token);
-      ///res.cookie("token", "ajahhajaja");
-      //res.cookie("token", token); // you can expire cookies read express docs
-      res.cookie("token", token, {
-        expires: new Date(Date.now() + 8 * 3600000),
-      });
-      res.send("Login Successful!!");
-    }
-    else {
-      throw new Error("Passowrd is not correct");
-    }
-  } catch (err) {
-
-  }
-})
 
 
-app.get("/profile", userAuth, async (req, res) =>
-{
-  // validate my cookie
-  try {
-    const user = req.user;
-    if (!user)
-    {
-      throw new Error("Login again");
-    }
-    res.send(user);
-    console.log(cookies);
-    res.send("Reading cookie");
-  }
-  catch (err)
-  {
-    console.log(err);
-    res.status(400).send("ERROR : " + err.message);
-  }
 
-})
+
+
+
 
 app.get("/feed", async (req, res) =>
 {
@@ -166,12 +113,7 @@ app.patch("/user/:userId", async (req, res) => {
   }
 });
 
-app.post("/sendConnectionRequest", userAuth, async (req, res) =>
-{
-  const user = req.user;
-  console.log("sending connection request");
-  res.send(user.firstName + "sent Connection Request");
-})
+
 
 
 connectDB()
