@@ -68,6 +68,8 @@ const userSchema = new mongoose.Schema(   // newmongoose.Schema or only mongoose
   }
 );
 
+
+// this aree schema methods
 userSchema.methods.getJWT = async function () // don't write arrow function here it breaks
 {
   const user = this; // this function has different implemnation in arrow function
