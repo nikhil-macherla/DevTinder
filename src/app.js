@@ -11,10 +11,12 @@ const { userAuth } = require("./middlewares/auth");
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/requests");
+const userRouter = require('./routes/user');
 
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
+app.use("/", userRouter);
 
 // // app.use((req, res) => // , so even if i do /test, /hello response wil be coming from here
 // // {
