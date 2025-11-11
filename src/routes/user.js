@@ -34,7 +34,7 @@ userRouter.get("/user/requests/received", userAuth, async (req, res) =>
 })
 
 //people who accepted my requests
-userRouter.get("/user/requests/connections", userAuth, async(req, res) =>
+userRouter.get("/user/connections", userAuth, async(req, res) =>
 {
   try {
     const loggedinUser = req.user;
@@ -65,6 +65,67 @@ userRouter.get("/user/requests/connections", userAuth, async(req, res) =>
 
   }
 
+})
+
+userRouter.get("/feed", userAuth, async (req, res) =>
+{
+  try
+  {
+    /// user should see all the user cards except
+    // 0. his own card
+    // 1. his connections
+    // 2. ignored people
+    // 3. already sent the connection request.
+    const loggedInUser = req.user;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    limit = limit > 50 ? 50 : limit; // to sanitize the data..atatcker limit as 1 lakh - mongod server goes down since it will be an expensive call
+    const skip = (page - 1) * limit;
+
+    // learnt difference between req.parms and req.query
+    // /skip:/params - etc
+    //find all connection requests (sent + received)
+    const connectionRequests = await connectionRequestModel.find(
+      {
+        $or: [
+          { fromUserId: loggedInUser._id },
+          { toUserId: loggedInUser._id }
+        ]
+      }
+    ).select("fromUserId toUserId");
+      // .populate("fromUserId", "firstName")
+    // .populate("toUserId", "firstName");
+
+
+    const hideUsersFromFeed = new Set(); // to find unique people
+    connectionRequests.forEach(req => {
+      hideUsersFromFeed.add(req.fromUserId.toString());
+      hideUsersFromFeed.add(req.toUserId.toString());
+    })
+
+    // console.log(hideUsersFromFeed);
+
+    // can i use object destructuring instead of Array.from() - please check nikki
+
+    const feedData = await User.find({
+      $and: [
+        { _id: { $nin: Array.from(hideUsersFromFeed) } },
+        { _id: { $ne: loggedInUser._id } } // i don't think this is needed. please check nikki
+      ],
+    }).select(USER_SAFE_DATA).skip(skip).limit(limit);
+    // console.log(feedData);
+    // add pagination - you don't want to send all existing users to newly signed up user.
+    // send only 10 maybeee
+    //  res.send(connectionRequests);
+
+    res.send(feedData);
+
+  }
+  catch (err)
+  {
+    res.status(400).json({ message: err.message });
+  }
 })
 
 module.exports = userRouter;
